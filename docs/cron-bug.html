@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+  <link href='./index.css' rel='stylesheet' type='text/css'>
+  <title>crontab.guru - Cron bug</title>
+</head>
+<body>
+<a href="/"><h1>crontab guru</h1></a>
+  <div class="blurb">
+    <div>The quick and simple editor for cron schedule expressions by <a href="https://cronitor.io" title="Cron job monitoring and observability">Cronitor</a></div>
+  </div>
+  <div id="tips">
+          <h3>How a cron bug became the de-facto standard</h3>
+          <p>By <a href="mailto:christian@wdt.io">Christian Pekeler</a>, 2016-09-27 (added Simple Test on 2016-10-07)</p>
+<p>I'm one of the guys behind <a href="https://wdt.io">WDT.io</a>, a monitoring service for cronjobs. While testing some scheduling edge cases, I discovered an old bug in cron. TL;DR: As long as your crontab schedules' day-of-month and day-of-week fields' values are just simple asterisks (<code>*</code>) or don't contain a <code>*</code> at all, you'll be fine. Otherwise, definitely keep on reading.</p>
+<h3>Background</h3>
+<p>If you are an experienced system administrator, you've likely set up your fair share of scheduled jobs using cron and are familiar with the scheduling syntax.</p>
+<p><code>[minute] [hour] [day-of-month] [month] [day-of-week]</code></p>
+<p>And you are well aware of how these five fields are interpreted by cron to determine when your job is supposed to run. That is, minute and hour and month all need to match the current time plus either day-of-month or day-of-week need to match as well. For example <a href="http://crontab.guru/#0_12_1_*_1-5"><code>0 12 1 * 1-5</code></a> runs at noon on the 1st day of every month and also on every work-weekday. It is basically the union of <a href="http://crontab.guru/#0_12_1_*_*"><code>0 12 1 * *</code></a> and <a href="http://crontab.guru/#0_12_*_*_1-5"><code>0 12 * * 1-5</code></a>.</p>
+<p>The man page for <a href="http://crontab.guru/crontab.5.html#lbAC">crontab(5)</a> describes it like this:</p>
+<blockquote>
+<p>The day of a command's execution can be specified in the following two fields - 'day of month', and 'day of week'. If both fields are restricted (i.e., do not contain the &quot;*&quot; character), the command will be run when <em>either</em> field matches the current time. For example, <a href="http://crontab.guru/#30_4_1,15_*_5"><code>30 4 1,15 * 5</code></a> would cause a command to be run at 4:30 am on the 1st and 15th of each month, plus every Friday.</p>
+</blockquote>
+<h3>Implementation</h3>
+<p>To better understand the bug, we first have to dig a little into the implementation. The way cron decides whether the time right now matches a crontab schedule can be described with the set notation. If neither day-of-month nor day-of-week are <code>*</code>, cron takes the union (∪) of their values <code>days-of-month ∪ days-of-week</code>. Otherwise cron takes the intersection (∩) of their values <code>days-of-month ∩ days-of-week</code>.</p>
+<p>For example, if day-of-month is <code>10</code> and day-of-week is <code>*</code>, i.e. one of them is an asterisk, we take the 10th of the month intersected with all days-of-week which results in &quot;the 10th of the month regardless of the day-of-week&quot;. So the schedule fires on exactly one day every month.</p>
+<p>If day-of-month is <code>10</code> and day-of-week is <code>TUE</code>, i.e. none of them are an asterisk, we take the 10th of the month in a union with all Tuesdays which results in &quot;the 10th of the month plus on all Tuesdays&quot;. So this schedule fires on four, five, or even six days of the month, depending on how many Tuesdays the month has and whether the 10th falls on a Tuesday.</p>
+<h3>The Bug</h3>
+<p>Cron's implementation is actually <em>only</em> checking if the very <em>first</em> character of the day-of-month or day-of-week field is an asterisk to decide whether to intersect or to union the day fields. This can cause a problem if either field is a longer token that happens to start with an asterisk. For example, you might think that the following two schedules produce exactly the same result, since the 10 is included in the asterisk wildcard. But they don't.</p>
+<p><a href="http://crontab.guru/#0_12_*,10_*_2"><code>0 12 *,10 * 2</code></a> ≠ <a href="http://crontab.guru/#0_12_10,*_*_2"><code>0 12 10,* * 2</code></a></p>
+<p>The first one's day-of-month starts with an asterisk so cron uses intersect. The schedule fires only on Tuesdays because <code>all-days-of-month ∩ Tuesday = Tuesday</code>. It is the same schedule as <a href="http://crontab.guru/#0_12_*_*_2"><code>0 12 * * 2</code></a>.</p>
+<p>The second schedule has an asterisk in the day-of-month field, but <em>not as the first</em> character. So cron uses union. The schedule fires every day because <code>all-days-of-month ∪ Tuesday = all-days-of-month</code>. It is therefore the same as <a href="http://crontab.guru/#0_12_*_*_*"><code>0 12 * * *</code></a>.</p>
+<p>This is admittedly an obscure bug because most people are aware that the asterisk is a wildcard standing for all values. So there is no point in creating a list with a wildcard. However, the problem also shows up when using ranges. You know that <a href="http://crontab.guru/#0-59_*_*_*_*"><code>0-59 * * * *</code></a> is the same schedule as <a href="http://crontab.guru/#*_*_*_*_*"><code>* * * * *</code></a>. But the following two schedules are not the same.</p>
+<p><a href="http://crontab.guru/#0_12_1-31_*_2"><code>0 12 1-31 * 2</code></a> ≠ <a href="http://crontab.guru/#0_12_*_*_2"><code>0 12 * * 2</code></a></p>
+<p>The first one fires every day (same as <a href="http://crontab.guru/#0_12_1-31_*_*"><code>0 12 1-31 * *</code></a> or as <a href="http://crontab.guru/#0_12_*_*_*"><code>0 12 * * *</code></a>), and the second schedule fires only on Tuesdays.</p>
+<p>This bug is most likely to affect you when using step values. Quick reminder on step values: <code>0-10/2</code> means every second value from zero through ten (same as the list <code>0,2,4,6,8,10</code>), and <code>*/3</code> means every third value. By using an asterisk with a step value for day-of-month or day-of-week we put cron into the intersect mode producing unexpected results.</p>
+<p>Most of the time, we choose to use the wildcard to make the cron more legible. However, by now you understand why <a href="http://crontab.guru/#0_12_*/2_*_0,6"><code>0 12 */2 * 0,6</code></a> does not run on every uneven day of the month plus on Saturday and Sundays. Instead, due to this bug, it only runs if today is uneven and is also on a weekend. To accomplish the former behaviour, you have to rewrite the schedule as <a href="http://crontab.guru/#0_12_1-31/2_*_0,6"><code>0 12 1-31/2 * 0,6</code></a>.</p>
+<h3>POSIX</h3>
+<p>POSIX is a family of standards specified by the IEEE Computer Society for maintaining compatibility between operating systems. It also describes the behaviour of cron. IEEE 1003.1 <a href="http://www.oldlinux.org/Linux.old/Ref-docs/POSIX/C952.pdf">specifically says</a> &quot;[if the field] is an asterisk&quot;. It doesn't say &quot;starts&quot;. So this is clearly a deviation from the standard.</p>
+<h3>Impact</h3>
+<p>To this day, Vixie cron (now officially called ISC Cron) is the dominant implementation of cron. It only checked the first character for <code>*</code> since its beginning in 1988. It wasn't a big deal back then because step values weren't supported yet. However, in 1993 step values were introduced with version 3, making it more likley that someone could run into this bug.</p>
+<p>The latest versions of Ubuntu, Debian, FreeBSD, OpenBSD, MacOS all include Vixie cron with this behaviour. Red Hat, Fedora, and CentOS have switched from Vixie cron to cronie. However, the schedule-parsing part of cronie is based on Vixie cron with the same problematic implementation.</p>
+<p>Vixie cron has been around for almost 30 years and is used  <em>everywhere</em>. So if Vixie cron behaves in a certain way, this way is the de-facto standard (even more so than POSIX). I therefore submit that this has become a feature despite the counterintuitive behaviour. Rather than update the code to fix the bug, I propose (and have submitted) an update to the man page to document (and thereby make official) this behaviour.</p>
+<h3>Confirmation</h3>
+<p>In a private conversation with <a href="https://en.wikipedia.org/wiki/Paul_Vixie">Paul Vixie</a>, the creator of Vixie cron, he confirmed the bug and agreed that it shouldn't be changed.</p>
+<blockquote>
+<p>this is certainly a bug, and it comes about because i wrote the parser at the char level rather than the token level, and because the step function syntax is a non-POSIX invention that was added later on.</p>
+</blockquote>
+<p>and</p>
+<blockquote>
+<p>i think you're right; fixing this would violate the principle of least astonishment for those rare users who are unknowingly depending on this bug in their current operations.</p>
+</blockquote>
+<h3>Other Implementations</h3>
+<p>When using other implementations that claim to be cron compatible, be aware that most of them have probably <em>not</em> implemented the first-character-is-asterisk union/intersect behaviour of Vixie cron described in this article. When in doubt, use <a href="http://crontab.guru">crontab.guru</a> to check your cron syntax and don't forget to <a href="https://wdt.io/cron-monitoring.html">monitor your scheduled tasks</a> for failures!</p>
+<h3>Simple Test</h3>
+<p>Here's a simple test to determine if your implementation of cron is affected by this issue. Add the following line to your crontab.</p>
+<p><code>* * *,* * SUN touch /tmp/cron-does-not-have-this-bug</code></p>
+<p>The important part is to <em>not</em> use the current day-of-week. So if today is a Sunday, replace <code>SUN</code> with <code>FRI</code>, for example. Then let it run for a couple of minutes before checking if the file was created. If the file isn't there, your cron <em>does</em> have this problem. Remember to remove the cronjob again when you're done with this test.</p>
+<p>Test explanation: If the day-of-week is today, intersected with all days-of-month, it'd result in the cron job running today. If it's not today, the intersection is empty and the job does not run. If it's a fixed version of cron, it would do a union and definitely run today.</p>
+</div>
+
+  </div>
+  <div id="footer">
+    <span>©&nbsp;2019&nbsp;Cronitor.io</span>
+    <span><a href="mailto:support@cronitor.io?subject=crontab.guru">contact</a></span>
+    <span><a href="/examples.html">examples</a></span>
+    <span><a href="/tips.html">tips</a></span>
+    <span><a href="/crontab.5.html">man&nbsp;page</a></span>
+    <span><a href="https://cronitor.io">cron monitoring</a></span>
+  </div>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-51806867-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-51806867-2');
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', window.main);
+    var _paq = _paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    window.addEventListener('load', function() {
+      var u="//wdtstats.wdt.io/piwik/";
+      _paq.push(['setTrackerUrl', u+'piwik.php']);
+      _paq.push(['setSiteId', 2]);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+    });
+  </script>
+</body>
+</html>

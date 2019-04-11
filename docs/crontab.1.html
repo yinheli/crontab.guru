@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+  <link href='./index.css' rel='stylesheet' type='text/css'>
+  <title>crontab.guru - crontab.1 manpage</title>
+</head>
+<body>
+<a href="/"><h1>crontab guru</h1></a>
+  <div class="blurb">
+    <div>The quick and simple editor for cron schedule expressions by <a href="https://cronitor.io?utm_source=crontabguru&utm_campaign=cronitor_top" title="Cron job monitoring and observability" rel="nofollow">Cronitor</a></div>
+  </div>
+  <div class="man">
+<H2>CRONTAB</H2>
+Section: User Commands (1)<BR>Updated: 2012-11-22<BR><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H3>NAME</H3>
+
+crontab - maintains crontab files for individual users
+<A NAME="lbAC">&nbsp;</A>
+<H3>SYNOPSIS</H3>
+
+<B>crontab</B>
+
+[<B>-u</B>
+
+<I>user</I>]<I> file</I>
+
+<BR>
+
+<B>crontab</B>
+
+[<B>-u</B>
+
+<I>user</I>]
+
+[<B>-l</B> | <B>-r</B> | <B>-e</B>]&nbsp;[<B>-i</B>]
+
+[<B>-s</B>]
+
+<BR>
+
+<B>crontab</B>
+
+<B>-n&nbsp;[</B>
+
+<I>hostname </I>]
+
+<BR>
+
+<B>crontab</B>
+
+<B>-c</B>
+
+<A NAME="lbAD">&nbsp;</A>
+<H3>DESCRIPTION</H3>
+
+<I>Crontab</I>
+
+is the program used to install, remove or list the tables used to serve
+the
+<B><A HREF="cron.8.html">cron</A></B>(8)
+
+daemon.  Each user can have their own crontab, and though these are files
+in
+<I>/var/spool/</I>,
+
+they are not intended to be edited directly.  For SELinux in MLS mode,
+you can define more crontabs for each range.  For more information, see
+<B>selinux</B>(8).
+
+<P>
+
+In this version of
+<I>Cron</I>
+
+it is possible to use a network-mounted shared
+<I>/var/spool/cron</I>
+
+across a cluster of hosts and specify that only one of the hosts should
+run the crontab jobs in the particular directory at any one time.  You
+may also use
+<B><A HREF="crontab.1.html">crontab</A></B>(1)
+
+from any of these hosts to edit the same shared set of crontab files, and
+to set and query which host should run the crontab jobs.
+<P>
+
+Running cron jobs can be allowed or disallowed for different users.  For
+this purpose, use the
+<I>cron.allow</I>
+
+and
+<I>cron.deny</I>
+
+files.  If the
+<I>cron.allow</I>
+
+file exists, a user must be listed in it to be allowed to use cron If the
+<I>cron.allow</I>
+
+file does not exist but the
+<I>cron.deny</I>
+
+file does exist, then a user must
+<I>not</I>
+
+be listed in the
+<I>cron.deny</I>
+
+file in order to use cron.  If neither of these files exists, only the
+super user is allowed to use cron.  Another way to restrict access to
+cron is to use PAM authentication in
+<I>/etc/security/access.conf</I>
+
+to set up users, which are allowed or disallowed to use
+<I>crontab</I>
+
+or modify system cron jobs in the
+<I>/etc/cron.d/</I>
+
+directory.
+<P>
+
+The temporary directory can be set in an environment variable.  If it is
+not set by the user, the
+<I>/tmp</I>
+
+directory is used.
+<P>
+
+<A NAME="lbAE">&nbsp;</A>
+<H3>OPTIONS</H3>
+
+<DL COMPACT>
+<DT><B>-u</B>
+
+<DD>
+Appends the name of the user whose crontab is to be modified.  If this
+option is not used,
+<I>crontab</I>
+
+examines &quot;your&quot; crontab, i.e., the crontab of the person executing the
+command.  Note that
+<B>su</B>(8)
+
+may confuse
+<I>crontab</I>,
+
+thus, when executing commands under
+<B>su</B>(8)
+
+you should always use the
+<B>-u</B>
+
+option.  If no crontab exists for a particular user, it is created for
+him the first time the
+<B>crontab -u</B>
+
+command is used under his username.
+<DT><B>-l</B>
+
+<DD>
+Displays the current crontab on standard output.
+<DT><B>-r</B>
+
+<DD>
+Removes the current crontab.
+<DT><B>-e</B>
+
+<DD>
+Edits the current crontab using the editor specified by the
+<I>VISUAL</I>
+
+or
+<I>EDITOR</I>
+
+environment variables.  After you exit from the editor, the modified
+crontab will be installed automatically.
+<DT><B>-i</B>
+
+<DD>
+This option modifies the
+<B>-r</B>
+
+option to prompt the user for a 'y/Y' response before actually removing
+the crontab.
+<DT><B>-s</B>
+
+<DD>
+Appends the current SELinux security context string as an MLS_LEVEL
+setting to the crontab file before editing / replacement occurs - see the
+documentation of MLS_LEVEL in
+<B><A HREF="crontab.5.html">crontab</A></B>(5).
+
+<DT><B>-n</B>
+
+<DD>
+This option is relevant only if
+<B><A HREF="cron.8.html">cron</A></B>(8)
+
+was started with the
+<B>-c</B>
+
+option, to enable clustering support.  It is used to set the host in the
+cluster which should run the jobs specified in the crontab files in the
+<I>/var/spool/cron</I>
+
+directory.  If a hostname is supplied, the host whose hostname returned
+by
+<B>gethostname</B>(2)
+
+matches the supplied hostname, will be selected to run the selected cron jobs subsequently.  If there
+is no host in the cluster matching the supplied hostname, or you explicitly specify
+an empty hostname, then the selected jobs will not be run at all.  If the hostname
+is omitted, the name of the local host returned by
+<B>gethostname</B>(2)
+
+is used.  Using this option has no effect on the
+<I>/etc/crontab</I>
+
+file and the files in the
+<I>/etc/cron.d</I>
+
+directory, which are always run, and considered host-specific.  For more
+information on clustering support, see
+<B><A HREF="cron.8.html">cron</A></B>(8).
+
+<DT><B>-c</B>
+
+<DD>
+This option is only relevant if
+<B><A HREF="cron.8.html">cron</A></B>(8)
+
+was started with the
+<B>-c</B>
+
+option, to enable clustering support.  It is used to query which host in
+the cluster is currently set to run the jobs specified in the crontab
+files in the directory
+<I>/var/spool/cron</I>
+
+, as set using the
+<B>-n</B>
+
+option.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H3>SEE ALSO</H3>
+
+<B><A HREF="crontab.5.html">crontab</A></B>(5),
+
+<B><A HREF="cron.8.html">cron</A></B>(8)
+
+<A NAME="lbAG">&nbsp;</A>
+<H3>FILES</H3>
+
+<PRE>
+/etc/cron.allow
+/etc/cron.deny
+</PRE>
+
+<A NAME="lbAH">&nbsp;</A>
+<H3>STANDARDS</H3>
+
+The
+<I>crontab</I>
+
+command conforms to IEEE Std1003.2-1992 (``POSIX'').  This new command
+syntax differs from previous versions of Vixie Cron, as well as from the
+classic SVR3 syntax.
+<A NAME="lbAI">&nbsp;</A>
+<H3>DIAGNOSTICS</H3>
+
+An informative usage message appears if you run a crontab with a faulty
+command defined in it.
+<A NAME="lbAJ">&nbsp;</A>
+<H3>AUTHOR</H3>
+
+
+Paul Vixie
+
+<BR>
+
+
+Colin Dean
+
+
+</div>
+
+  <div id="footer">
+    <span>©&nbsp;2019&nbsp;Cronitor.io</span>
+    <span><a href="mailto:support@cronitor.io?subject=crontab.guru">contact</a></span>
+    <span><a href="/examples.html">examples</a></span>
+    <span><a href="/tips.html">tips</a></span>
+    <span><a href="/crontab.5.html">man&nbsp;page</a></span>
+    <span><a href="https://cronitor.io">cron monitoring</a></span>
+  </div>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-51806867-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-51806867-2');
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', window.main);
+    var _paq = _paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    window.addEventListener('load', function() {
+      var u="//wdtstats.wdt.io/piwik/";
+      _paq.push(['setTrackerUrl', u+'piwik.php']);
+      _paq.push(['setSiteId', 2]);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+    });
+  </script>
+</body>
+</html>

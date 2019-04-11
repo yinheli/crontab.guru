@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+  <link href='./index.css' rel='stylesheet' type='text/css'>
+  <title>crontab.guru - cron.8 manpage</title>
+</head>
+<body>
+<a href="/"><h1>crontab guru</h1></a>
+  <div class="blurb">
+    <div>The quick and simple editor for cron schedule expressions by <a href="https://cronitor.io?utm_source=crontabguru&utm_campaign=cronitor_top" title="Cron job monitoring and observability" rel="nofollow">Cronitor</a></div>
+  </div>
+  <div class="man">
+<H2>CRON</H2>
+Section: System Administration (8)<BR>Updated: 2013-09-26<BR><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H3>NAME</H3>
+
+crond - daemon to execute scheduled commands
+<A NAME="lbAC">&nbsp;</A>
+<H3>SYNOPSIS</H3>
+
+<B>crond</B>
+
+[<B>-c</B> | <B>-h</B> | <B>-i</B> | <B>-n</B> | <B>-p</B> | <B>-P</B> | <B>-s</B> | <B>-m</B><I>&lt;mail</I><B>command&gt;</B>]
+
+<BR>
+
+<B>crond</B>
+
+<B>-x</B>
+
+[ext,sch,proc,pars,load,misc,test,bit]
+
+<A NAME="lbAD">&nbsp;</A>
+<H3>DESCRIPTION</H3>
+
+<I>Cron</I>
+
+is started from
+<I>/etc/rc.d/init.d</I>
+
+or
+<I>/etc/init.d</I>
+
+when classical sysvinit scripts are used. In case systemd is enabled, then unit file is installed into
+<I>/lib/systemd/system/crond.service</I>
+
+and daemon is started by
+<I>systemctl start crond.service</I>
+
+command. It returns immediately, thus, there is no need to need to start it with
+the '&amp;' parameter.
+<P>
+
+<I>Cron</I>
+
+searches
+<I>/var/spool/cron</I>
+
+for crontab files which are named after accounts in
+<I>/etc/passwd;</I>
+
+The found crontabs are loaded into the memory.
+<I>Cron</I>
+
+also searches for
+<I>/etc/anacrontab</I>
+
+and any files in the
+<I>/etc/cron.d</I>
+
+directory, which have a different format (see
+<B><A HREF="crontab.5.html">crontab</A></B>(5)).
+
+<I>Cron</I>
+
+examines all stored crontabs and checks each job to see if it needs to be
+run in the current minute.  When executing commands, any output is mailed
+to the owner of the crontab (or to the user specified in the
+<I>MAILTO</I>
+
+environment variable in the crontab, if such exists).  Any job output can
+also be sent to syslog by using the
+<B>-s</B>
+
+option.
+<P>
+
+There are two ways how changes in crontables are checked.  The first
+method is checking the modtime of a file.  The second method is using the
+inotify support.  Using of inotify is logged in the
+<I>/var/log/cron</I>
+
+log after the daemon is started.  The inotify support checks for changes
+in all crontables and accesses the hard disk only when a change is
+detected.
+<P>
+
+When using the modtime option,
+<I>Cron</I>
+
+checks its crontables' modtimes every minute to check for any changes and
+reloads the crontables which have changed.  There is no need to restart
+<I>Cron</I>
+
+after some of the crontables were modified.  The modtime option is also
+used when inotify can not be initialized.
+<P>
+
+<I>Cron</I>
+
+checks these files and directories:
+<DL COMPACT>
+<DT><I>/etc/crontab</I>
+
+<DD>
+system crontab.  Nowadays the file is empty by default.  Originally it
+was usually used to run daily, weekly, monthly jobs.  By default these
+jobs are now run through anacron which reads
+<I>/etc/anacrontab</I>
+
+configuration file.  See
+<B>anacrontab</B>(5)
+
+for more details.
+<DT><I>/etc/cron.d/</I>
+
+<DD>
+directory that contains system cronjobs stored for different users.
+<DT><I>/var/spool/cron</I>
+
+<DD>
+directory that contains user crontables created by the
+<I>crontab</I>
+
+command.
+</DL>
+<P>
+
+Note that the
+<B><A HREF="crontab.1.html">crontab</A></B>(1)
+
+command updates the modtime of the spool directory whenever it changes a
+crontab.
+<P>
+
+<A NAME="lbAE">&nbsp;</A>
+<H4>Daylight Saving Time and other time changes</H4>
+
+Local time changes of less than three hours, such as those caused by the
+Daylight Saving Time changes, are handled in a special way.  This only
+applies to jobs that run at a specific time and jobs that run with a
+granularity greater than one hour.  Jobs that run more frequently are
+scheduled normally.
+<P>
+
+If time was adjusted one hour forward, those jobs that would have run in
+the interval that has been skipped will be run immediately.  Conversely,
+if time was adjusted backward, running the same job twice is avoided.
+<P>
+
+Time changes of more than 3 hours are considered to be corrections to the
+clock or the timezone, and the new time is used immediately.
+<P>
+
+It is possible to use different time zones for crontables.  See
+<B><A HREF="crontab.5.html">crontab</A></B>(5)
+
+for more information.
+<A NAME="lbAF">&nbsp;</A>
+<H4>PAM Access Control</H4>
+
+<I>Cron</I>
+
+supports access control with PAM if the system has PAM installed.  For
+more information, see
+<B>pam</B>(8).
+
+A PAM configuration file for
+<I>crond</I>
+
+is installed in
+<I>/etc/pam.d/crond</I>.
+
+The daemon loads the PAM environment from the pam_env module.  This can
+be overridden by defining specific settings in the appropriate crontab
+file.
+<A NAME="lbAG">&nbsp;</A>
+<H3>OPTIONS</H3>
+
+<DL COMPACT>
+<DT><B>-h</B>
+
+<DD>
+Prints a help message and exits.
+<DT><B>-i</B>
+
+<DD>
+Disables inotify support.
+<DT><B>-m</B>
+
+<DD>
+This option allows you to specify a shell command to use for sending
+<I>Cron</I>
+
+mail output instead of using
+<B>sendmail</B>(8)
+
+This command must accept a fully formatted mail message (with headers) on
+standard input and send it as a mail message to the recipients specified
+in the mail headers.  Specifying the string
+<I>off</I>
+
+(i.e., crond -m off)
+will disable the sending of mail.
+<DT><B>-n</B>
+
+<DD>
+Tells the daemon to run in the foreground.  This can be useful when
+starting it out of init. With this option is needed to change pam setting.
+<I>/etc/pam.d/crond</I>
+
+must not enable
+<I>pam_loginuid.so</I>
+
+module.
+<DT><B>-p</B>
+
+<DD>
+Allows
+<I>Cron</I>
+
+to accept any user set crontables.
+<DT><B>-P</B>
+
+<DD>
+Don't set PATH.  PATH is instead inherited from the environment.
+<DT><B>-c</B>
+
+<DD>
+This option enables clustering support, as described below.
+<DT><B>-s</B>
+
+<DD>
+This option will direct
+<I>Cron</I>
+
+to send the job output to the system log using
+<B>syslog</B>(3).
+
+This is useful if your system does not have
+<B>sendmail</B>(8),
+
+installed or if mail is disabled.
+<DT><B>-x</B>
+
+<DD>
+This option allows you to set debug flags.
+</DL>
+<A NAME="lbAH">&nbsp;</A>
+<H3>SIGNALS</H3>
+
+When the
+<I>SIGHUP</I>
+
+is received, the
+<I>Cron</I>
+
+daemon will close and reopen its log file.  This proves to be useful in
+scripts which rotate and age log files.  Naturally, this is not relevant
+if
+<I>Cron</I>
+
+was built to use
+<I>syslog</I>(3).
+
+<A NAME="lbAI">&nbsp;</A>
+<H3>CLUSTERING SUPPORT</H3>
+
+In this version of
+<I>Cron</I>
+
+it is possible to use a network-mounted shared
+<I>/var/spool/cron</I>
+
+across a cluster of hosts and specify that only one of the hosts should
+run the crontab jobs in this directory at any one time.  This is done by
+starting
+<I>Cron</I>
+
+with the
+<B>-c</B>
+
+option, and have the
+<I>/var/spool/cron/.cron.hostname</I>
+
+file contain just one line, which represents the hostname of whichever
+host in the cluster should run the jobs.  If this file does not exist, or
+the hostname in it does not match that returned by
+<B>gethostname</B>(2),
+
+then all crontab files in this directory are ignored.  This has no effect
+on cron jobs specified in the
+<I>/etc/crontab</I>
+
+file or on files in the
+<I>/etc/cron.d</I>
+
+directory.  These files are always run and considered host-specific.
+<P>
+
+Rather than editing
+<I>/var/spool/cron/.cron.hostname</I>
+
+directly, use the
+<B>-n</B>
+
+option of
+<B><A HREF="crontab.1.html">crontab</A></B>(1)
+
+to specify the host.
+<P>
+
+You should ensure that all hosts in a cluster, and the file server from
+which they mount the shared crontab directory, have closely synchronised
+clocks, e.g., using
+<B>ntpd</B>(8),
+
+otherwise the results will be very unpredictable.
+<P>
+
+Using cluster sharing automatically disables inotify support, because
+inotify cannot be relied on with network-mounted shared file systems.
+<A NAME="lbAJ">&nbsp;</A>
+<H3>CAVEATS</H3>
+
+All
+<B>crontab</B>
+
+files have to be regular files or symlinks to regular files, they must
+not be executable or writable for anyone else but the owner.  This
+requirement can be overridden by using the
+<B>-p</B>
+
+option on the crond command line.  If inotify support is in use, changes
+in the symlinked crontabs are not automatically noticed by the cron
+daemon.  The cron daemon must receive a SIGHUP signal to reload the
+crontabs.  This is a limitation of the inotify API.
+<P>
+
+The syslog output will be used instead of mail, when sendmail is not
+installed.
+<A NAME="lbAK">&nbsp;</A>
+<H3>SEE ALSO</H3>
+
+<B><A HREF="crontab.1.html">crontab</A></B>(1),
+
+<B><A HREF="crontab.5.html">crontab</A></B>(5),
+
+<B>inotify</B>(7),
+
+<B>pam</B>(8)
+
+<A NAME="lbAL">&nbsp;</A>
+<H3>AUTHOR</H3>
+
+
+Paul Vixie
+
+<BR>
+
+
+Marcela Mašláňová
+
+<BR>
+
+
+Colin Dean
+
+</div>
+
+  <div id="footer">
+    <span>©&nbsp;2019&nbsp;Cronitor.io</span>
+    <span><a href="mailto:support@cronitor.io?subject=crontab.guru">contact</a></span>
+    <span><a href="/examples.html">examples</a></span>
+    <span><a href="/tips.html">tips</a></span>
+    <span><a href="/crontab.5.html">man&nbsp;page</a></span>
+    <span><a href="https://cronitor.io">cron monitoring</a></span>
+  </div>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-51806867-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-51806867-2');
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', window.main);
+    var _paq = _paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    window.addEventListener('load', function() {
+      var u="//wdtstats.wdt.io/piwik/";
+      _paq.push(['setTrackerUrl', u+'piwik.php']);
+      _paq.push(['setSiteId', 2]);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+    });
+  </script>
+</body>
+</html>

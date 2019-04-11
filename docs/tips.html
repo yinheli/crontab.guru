@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+  <link href='./index.css' rel='stylesheet' type='text/css'>
+  <title>crontab.guru - tips</title>
+</head>
+<body>
+<a href="/"><h1>crontab guru</h1></a>
+  <div class="blurb">
+    <div>The quick and simple editor for cron schedule expressions by <a href="https://cronitor.io?utm_source=crontabguru&utm_campaign=cronitor_top" title="Cron job monitoring and observability" rel="nofollow">Cronitor</a></div>
+  </div>
+  <div class="tips">
+    <h3>Tips for writing crontab expressions:</h3>
+    <p><span class="title">Tip 1:</span> If the day-of-month or day-of-week part <i>starts</i> with a *, they form an intersection. Otherwise they form a union. * * 3 * 1 runs on the 3rd day of the month and on Monday (union), whereas * * */2 * 1 runs on every second day of the month only if it's also a Monday (intersection). The <a href="/crontab.5.html">manpage</a> is incorrect about this detail. <a target="_blank" href="/cron-bug.html">More info</a>.</p>
+    <p><span class="title">Tip 2:</span> Run your servers including the cron process in UTC timezone. <a target="_blank" href="http://yellerapp.com/posts/2015-01-12-the-worst-server-setup-you-can-make.html">Why?</a></p>
+    <p><span class="title">Tip 3:</span> Some cron implementations allow to specify years and seconds. However, cron is not the best tool if you need to operate at those levels, which is also why crontab.guru doesn't support them.</p>
+    <p><span class="title">Tip 4:</span> Don't use @reboot because it has too many <a target="_blank" href="http://unix.stackexchange.com/questions/109804/crontabs-reboot-only-works-for-root">issues</a>.</p>
+    <p><span class="title">Tip 5:</span> More difficult schedules can be realized by combining multiple cron expressions. For example, if you need to run X every 90 minutes, create one crontab entry that runs X every 3 hours on the hour (0 */3 * * *), and a second crontab entry that runs X every 3 hours with an offset (30 1/3 * * *).</p>
+    <p><span class="title">Tip 6:</span> Another alternative for complicated schedules is <a target="_blank" href="https://www.gnu.org/software/mcron/">Mcron</a>.</p>
+    <p><span class="title">More tips:</span> <a target="_blank" href="http://blog.endpoint.com/2008/12/best-practices-for-cron.html">Best practices for cron</a></p>
+  </div>
+
+  </div>
+  <div id="footer">
+    <span>©&nbsp;2018&nbsp;Cronitor.io</span>
+    <span><a href="mailto:support@cronitor.io?subject=crontab.guru">contact</a></span>
+    <span><a href="/examples.html">examples</a></span>
+    <span><a href="/tips.html">tips</a></span>
+    <span><a href="/crontab.5.html">man&nbsp;page</a></span>
+    <span><a href="https://cronitor.io">cron monitoring</a></span>
+  </div>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-51806867-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-51806867-2');
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', window.main);
+    var _paq = _paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    window.addEventListener('load', function() {
+      var u="//wdtstats.wdt.io/piwik/";
+      _paq.push(['setTrackerUrl', u+'piwik.php']);
+      _paq.push(['setSiteId', 2]);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+    });
+  </script>
+</body>
+</html>
